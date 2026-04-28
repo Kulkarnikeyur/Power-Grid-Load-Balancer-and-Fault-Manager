@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
 #include <sys/socket.h>
 
 #include "handler.h"
@@ -15,6 +14,7 @@
 
 #define BUFFER_SIZE 1024
 
+// Safe receive
 static ssize_t recv_all(int sock, void *buffer, size_t length)
 {
     size_t total = 0;
@@ -27,70 +27,66 @@ static ssize_t recv_all(int sock, void *buffer, size_t length)
             return ret;
         total += ret;
     }
-
     return total;
 }
 
-static ssize_t send_all(int sock, const char *buffer, size_t length)
-{
-    size_t total = 0;
-
-    while (total < length)
-    {
-        ssize_t sent = send(sock, buffer + total, length - total, 0);
-        if (sent <= 0)
-            return sent;
-        total += sent;
-    }
-
-    return total;
-}
-
+// Send response
 static void send_response(int client_socket, const char *response)
 {
-    size_t len = strlen(response);
-    if (len == 0)
-        return;
-
-    if (send_all(client_socket, response, len) <= 0)
-        perror("Failed to send response");
+    send(client_socket, response, strlen(response), 0);
 }
 
 void *client_handler(void *arg)
 {
-    int client_socket = *(int *)arg;
-    free(arg);
+    client_info_t *info = (client_info_t *)arg;
+    int client_socket = info->socket;
+    free(info);
+
+    int client_role = -1;
+    int client_id = -1;
 
     Message msg;
-    ssize_t bytes_read;
 
-    printf("Handler thread started for client %d\n", client_socket);
+    printf("Handler thread started for socket %d\n", client_socket);
 
     while (1)
     {
-        bytes_read = recv_all(client_socket, &msg, sizeof(Message));
-        if (bytes_read == 0)
+        ssize_t bytes_read = recv_all(client_socket, &msg, sizeof(Message));
+
+        if (bytes_read <= 0)
         {
-            printf("Client %d disconnected\n", client_socket);
-            break;
-        }
-        if (bytes_read < 0)
-        {
-            perror("Receive failed");
+            printf("Client socket %d disconnected\n", client_socket);
             break;
         }
 
-        printf("Received: type=%d, id=%d, role=%d, value=%d\n",
-               msg.type, msg.client_id, msg.role, msg.value);
+        char response[BUFFER_SIZE];
+        int result;
 
+        // 🔥 LOGIN handled FIRST (no auth check)
+        if (msg.type == LOGIN)
+        {
+            client_role = msg.role;
+            client_id = msg.client_id;
+
+            printf("Client %d logged in as ", client_id);
+
+            if (client_role == ROLE_ADMIN)
+                printf("ADMIN\n");
+            else if (client_role == ROLE_OPERATOR)
+                printf("OPERATOR\n");
+            else if (client_role == ROLE_MONITOR)
+                printf("MONITOR\n");
+
+            send_response(client_socket, "LOGIN OK\n");
+            continue;
+        }
+
+        // 🔒 Authorization AFTER login
         if (!is_authorized(msg.role, msg.type))
         {
             send_response(client_socket, "ERROR: Unauthorized action\n");
             continue;
         }
-
-        char response[BUFFER_SIZE];
-        int result;
 
         switch (msg.type)
         {
@@ -98,16 +94,12 @@ void *client_handler(void *arg)
             if (msg.value <= 0)
             {
                 snprintf(response, BUFFER_SIZE,
-                         "ERROR: Request amount must be positive\n");
-            }
-            else if (msg.value > get_total_capacity())
-            {
-                snprintf(response, BUFFER_SIZE,
-                         "ERROR: Requested amount exceeds total capacity\n");
+                         "ERROR: Request must be positive\n");
             }
             else
             {
                 result = request_capacity(msg.value);
+
                 if (result == 0)
                 {
                     snprintf(response, BUFFER_SIZE,
@@ -117,22 +109,15 @@ void *client_handler(void *arg)
                 {
                     snprintf(response, BUFFER_SIZE,
                              "FAIL: Not enough capacity\n");
-                    send_fault_message("ALERT: Capacity request denied due to overload");
+
+                    send_fault_message("ALERT: Capacity request denied");
                 }
             }
             break;
 
         case LOAD_UPDATE:
-            if (msg.value < 0)
-            {
-                snprintf(response, BUFFER_SIZE,
-                         "ERROR: Load update value must not be negative\n");
-            }
-            else
-            {
-                snprintf(response, BUFFER_SIZE,
-                         "LOAD UPDATED: %d\n", msg.value);
-            }
+            snprintf(response, BUFFER_SIZE,
+                     "LOAD UPDATED: %d\n", msg.value);
             break;
 
         case VIEW_STATUS:
@@ -142,42 +127,28 @@ void *client_handler(void *arg)
             break;
 
         case MODIFY_CAPACITY:
-            if (msg.value <= 0)
+            result = modify_capacity(msg.value);
+
+            if (result == 0)
             {
                 snprintf(response, BUFFER_SIZE,
-                         "ERROR: Capacity must be positive\n");
-            }
-            else if (msg.value < get_used_capacity())
-            {
-                snprintf(response, BUFFER_SIZE,
-                         "FAIL: New capacity cannot be lower than used capacity\n");
+                         "SUCCESS: Capacity updated to %d\n", msg.value);
             }
             else
             {
-                result = modify_capacity(msg.value);
-                if (result == 0)
-                {
-                    snprintf(response, BUFFER_SIZE,
-                             "SUCCESS: Total capacity updated to %d\n", msg.value);
-                }
-                else
-                {
-                    snprintf(response, BUFFER_SIZE,
-                             "FAIL: Unable to modify capacity\n");
-                }
+                snprintf(response, BUFFER_SIZE,
+                         "FAIL: Invalid capacity update\n");
             }
             break;
 
         case FORCE_DISCONNECT:
-            send_response(client_socket, "NOTICE: Server will close this connection\n");
-            printf("Force disconnect requested by client %d\n", client_socket);
+            send_response(client_socket, "Disconnected by server\n");
             close(client_socket);
             return NULL;
 
         default:
             snprintf(response, BUFFER_SIZE,
-                     "ERROR: Unknown request type %d\n", msg.type);
-            break;
+                     "ERROR: Unknown request\n");
         }
 
         send_response(client_socket, response);

@@ -3,7 +3,6 @@
 #ifndef FILE_OPS_H
 #define FILE_OPS_H
 
-int read_grid_state(int *used, int *total);
-void write_grid_state(int used, int total);
+void log_grid_action(int client_id, const char *action, int amount, int remaining);
 
 #endif

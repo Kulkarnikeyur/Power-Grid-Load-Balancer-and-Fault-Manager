@@ -1,6 +1,8 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#define LOGIN 0
+
 // Roles
 #define ROLE_ADMIN 1
 #define ROLE_OPERATOR 2

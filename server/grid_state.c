@@ -29,7 +29,6 @@ void init_grid(int total)
     }
 
     grid_initialized = 1;
-    write_grid_state(used_capacity, total_capacity);
     printf("Grid initialized with capacity: %d\n", total_capacity);
 }
 
@@ -58,15 +57,19 @@ int request_capacity(int amount)
     }
 
     pthread_mutex_lock(&grid_mutex);
+
     used_capacity += amount;
-    if (used_capacity >= total_capacity)
+
+    int is_full = (used_capacity >= total_capacity);
+
+    pthread_mutex_unlock(&grid_mutex);
+
+    if (is_full)
     {
         send_fault_message("WARNING: Grid capacity reached!");
     }
-    write_grid_state(used_capacity, total_capacity);
     printf("Allocated %d units, Used: %d / %d\n",
            amount, used_capacity, total_capacity);
-    pthread_mutex_unlock(&grid_mutex);
 
     return 0;
 }
@@ -81,7 +84,6 @@ void release_capacity(int amount)
         amount = used_capacity;
 
     used_capacity -= amount;
-    write_grid_state(used_capacity, total_capacity);
     pthread_mutex_unlock(&grid_mutex);
 
     for (int i = 0; i < amount; i++)
@@ -125,7 +127,6 @@ int modify_capacity(int new_total_capacity)
     }
 
     total_capacity = new_total_capacity;
-    write_grid_state(used_capacity, total_capacity);
     pthread_mutex_unlock(&grid_mutex);
 
     printf("Modified grid capacity to %d, Used: %d\n",
