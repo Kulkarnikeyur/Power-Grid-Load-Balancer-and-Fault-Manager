@@ -31,7 +31,13 @@ void init_grid(int total)
     grid_initialized = 1;
     printf("Grid initialized with capacity: %d\n", total_capacity);
 }
-
+int get_available_capacity()
+{
+    pthread_mutex_lock(&grid_mutex);
+    int available = total_capacity - used_capacity;
+    pthread_mutex_unlock(&grid_mutex);
+    return available;
+}
 int request_capacity(int amount)
 {
     if (!grid_initialized || amount <= 0)
@@ -41,7 +47,7 @@ int request_capacity(int amount)
     if (used_capacity + amount > total_capacity)
     {
         pthread_mutex_unlock(&grid_mutex);
-        return -1;
+        return total_capacity - used_capacity; // return available capacity
     }
     pthread_mutex_unlock(&grid_mutex);
 
@@ -60,7 +66,7 @@ int request_capacity(int amount)
 
     used_capacity += amount;
 
-    int is_full = (used_capacity >= total_capacity);
+    int is_full = (used_capacity == total_capacity);
 
     pthread_mutex_unlock(&grid_mutex);
 
@@ -71,7 +77,7 @@ int request_capacity(int amount)
     printf("Allocated %d units, Used: %d / %d\n",
            amount, used_capacity, total_capacity);
 
-    return 0;
+    return -2;
 }
 
 void release_capacity(int amount)

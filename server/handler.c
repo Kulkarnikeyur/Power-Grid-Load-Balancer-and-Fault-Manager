@@ -42,6 +42,7 @@ void *client_handler(void *arg)
     int client_socket = info->socket;
     free(info);
 
+    int allocated = 0; // track per client
     int client_role = -1;
     int client_id = -1;
 
@@ -55,6 +56,14 @@ void *client_handler(void *arg)
 
         if (bytes_read <= 0)
         {
+            if (allocated > 0)
+            {
+                int temp = allocated;
+                release_capacity(allocated);
+                allocated = 0;
+
+                printf("Released %d units from client %d\n", temp, client_id);
+            }
             printf("Client socket %d disconnected\n", client_socket);
             break;
         }
@@ -100,25 +109,95 @@ void *client_handler(void *arg)
             {
                 result = request_capacity(msg.value);
 
-                if (result == 0)
+                if (result == -2)
                 {
+                    allocated += msg.value;
                     snprintf(response, BUFFER_SIZE,
                              "SUCCESS: Allocated %d units\n", msg.value);
+                }
+                else if (result >= 0)
+                {
+                    snprintf(response, BUFFER_SIZE,
+                             "ERROR: Only %d units available\n", result);
+
+                    char fault_msg[256];
+
+                    snprintf(fault_msg, sizeof(fault_msg),
+                             "ALERT: Capacity request denied (available capacity is %d)", result);
+
+                    send_fault_message(fault_msg);
                 }
                 else
                 {
                     snprintf(response, BUFFER_SIZE,
                              "FAIL: Not enough capacity\n");
 
-                    send_fault_message("ALERT: Capacity request denied");
+                    send_fault_message("ALERT: Check if grid is initialized and ensure requested capacity is valid");
                 }
             }
             break;
 
         case LOAD_UPDATE:
-            snprintf(response, BUFFER_SIZE,
-                     "LOAD UPDATED: %d\n", msg.value);
+        {
+            if (allocated <= 0)
+            {
+                snprintf(response, BUFFER_SIZE,
+                         "ERROR: Allocate capacity first using REQUEST_CAPACITY\n");
+                break;
+            }
+
+            if (msg.value < 0)
+            {
+                snprintf(response, BUFFER_SIZE,
+                         "ERROR: Load cannot be negative\n");
+                break;
+            }
+
+            int new_load = msg.value;
+            int delta = new_load - allocated;
+
+            // 🔼 Increase load
+            if (delta > 0)
+            {
+                // ONLY rely on semaphore
+                if (request_capacity(delta) == 0)
+                {
+                    allocated = new_load;
+
+                    snprintf(response, BUFFER_SIZE,
+                             "LOAD UPDATED: %d (increased by %d)\n",
+                             allocated, delta);
+                }
+                else
+                {
+                    int available = get_total_capacity() - get_used_capacity();
+
+                    snprintf(response, BUFFER_SIZE,
+                             "FAIL: Not enough capacity (available: %d)\n",
+                             available);
+                }
+            }
+
+            // 🔽 Decrease load
+            else if (delta < 0)
+            {
+                release_capacity(-delta);
+                allocated = new_load;
+
+                snprintf(response, BUFFER_SIZE,
+                         "LOAD UPDATED: %d (decreased by %d)\n",
+                         allocated, -delta);
+            }
+
+            // ➖ No change
+            else
+            {
+                snprintf(response, BUFFER_SIZE,
+                         "LOAD UNCHANGED: %d\n", allocated);
+            }
+
             break;
+        }
 
         case VIEW_STATUS:
             snprintf(response, BUFFER_SIZE,
@@ -153,7 +232,14 @@ void *client_handler(void *arg)
 
         send_response(client_socket, response);
     }
+    if (allocated > 0)
+    {
+        int temp = allocated;
+        release_capacity(allocated);
+        allocated = 0;
 
+        printf("Released %d units from client %d\n", temp, client_id);
+    }
     close(client_socket);
     return NULL;
 }

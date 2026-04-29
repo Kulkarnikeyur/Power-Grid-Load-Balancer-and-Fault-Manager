@@ -23,7 +23,11 @@ int is_authorized(int role, int action)
 
     // Admin → full access
     if (role == ROLE_ADMIN)
-        return 1;
+    {
+        if (action == VIEW_STATUS || action == MODIFY_CAPACITY)
+            return 1;
+        return 0;
+    }
 
     // Operator → limited actions
     if (role == ROLE_OPERATOR)

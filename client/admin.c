@@ -18,10 +18,12 @@ void run_admin(int sock)
     Message login_msg;
     login_msg.type = LOGIN;
     login_msg.client_id = getpid();
-    login_msg.role = ROLE_OPERATOR; // change per file
+    login_msg.role = ROLE_ADMIN; // change per file
     login_msg.value = 0;
 
     send_message(sock, &login_msg);
+    receive_response(sock, response, sizeof(response));
+    printf("Server: %s", response);
 
     while (1)
     {
@@ -36,6 +38,8 @@ void run_admin(int sock)
         {
 
         case 1:
+            msg.role = ROLE_ADMIN;
+            msg.client_id = getpid();
             msg.type = VIEW_STATUS;
             msg.value = 0;
 
@@ -45,6 +49,8 @@ void run_admin(int sock)
             break;
 
         case 2:
+            msg.role = ROLE_ADMIN;
+            msg.client_id = getpid();
             msg.type = MODIFY_CAPACITY;
             printf("Enter new capacity: ");
             scanf("%d", &msg.value);
