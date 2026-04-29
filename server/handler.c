@@ -159,8 +159,9 @@ void *client_handler(void *arg)
             // 🔼 Increase load
             if (delta > 0)
             {
+                int x = request_capacity(delta);
                 // ONLY rely on semaphore
-                if (request_capacity(delta) == 0)
+                if (x == -2)
                 {
                     allocated = new_load;
 
@@ -168,7 +169,7 @@ void *client_handler(void *arg)
                              "LOAD UPDATED: %d (increased by %d)\n",
                              allocated, delta);
                 }
-                else
+                else if (x == -1)
                 {
                     int available = get_total_capacity() - get_used_capacity();
 
