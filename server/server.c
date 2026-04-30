@@ -1,5 +1,3 @@
-// server/server.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -32,12 +30,10 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    // Allow reuse of port
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 
     printf("Socket created successfully\n");
 
-    // Setup address
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
@@ -62,7 +58,6 @@ int main()
 
     printf("Server listening on port %d...\n", PORT);
 
-    // Reset log file on every server start
     int fd = open("grid_log.dat", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
     {
@@ -72,13 +67,11 @@ int main()
     {
         close(fd);
     }
-    // Init systems
     init_fault_system();
     init_grid(DEFAULT_CAPACITY);
 
     printf("Fresh start: Grid initialized with %d\n", DEFAULT_CAPACITY);
 
-    // Accept loop
     while (1)
     {
         client_socket = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len);

@@ -34,11 +34,9 @@ void run_monitor()
         {
             buffer[bytes] = '\0';
 
-            // Remove trailing newline
             if (buffer[bytes - 1] == '\n')
                 buffer[bytes - 1] = '\0';
 
-            // 🔥 Ignore empty messages
             if (strlen(buffer) == 0)
                 continue;
 

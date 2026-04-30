@@ -1,5 +1,3 @@
-// server/file_ops.c
-
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -25,7 +23,6 @@ void log_grid_action(int client_id, const char *action, int amount, int remainin
 
     fcntl(fd, F_SETLKW, &lock);
 
-    // Get timestamp
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
 

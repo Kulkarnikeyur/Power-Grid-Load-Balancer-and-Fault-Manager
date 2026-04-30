@@ -1,5 +1,3 @@
-// client/admin.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,7 +16,7 @@ void run_admin(int sock)
     Message login_msg;
     login_msg.type = LOGIN;
     login_msg.client_id = getpid();
-    login_msg.role = ROLE_ADMIN; // change per file
+    login_msg.role = ROLE_ADMIN;
     login_msg.value = 0;
 
     send_message(sock, &login_msg);

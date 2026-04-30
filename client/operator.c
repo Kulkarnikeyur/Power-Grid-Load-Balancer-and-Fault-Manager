@@ -1,5 +1,3 @@
-// client/operator.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,7 +15,7 @@ void run_operator(int sock)
     Message login_msg;
     login_msg.type = LOGIN;
     login_msg.client_id = client_id;
-    login_msg.role = ROLE_OPERATOR; // change per file
+    login_msg.role = ROLE_OPERATOR;
     login_msg.value = 0;
 
     send_message(sock, &login_msg);

@@ -1,5 +1,3 @@
-// client/operator.h
-
 #ifndef OPERATOR_H
 #define OPERATOR_H
 

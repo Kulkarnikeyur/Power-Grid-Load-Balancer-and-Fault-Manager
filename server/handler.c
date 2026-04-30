@@ -1,5 +1,3 @@
-// server/handler.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +24,6 @@ const char *role_to_string(int role)
     return "UNKNOWN";
 }
 
-// Safe receive
 static ssize_t recv_all(int sock, void *buffer, size_t length)
 {
     size_t total = 0;
@@ -54,7 +51,7 @@ void *client_handler(void *arg)
     int client_socket = info->socket;
     free(info);
 
-    int allocated = 0; // track per client
+    int allocated = 0; // Track allocated capacity for this client
     int client_role = -1;
     int client_id = -1;
 
@@ -77,7 +74,6 @@ void *client_handler(void *arg)
                 printf("Released %d units from client %d\n", temp, client_id);
             }
 
-            // 🔥 ADD THIS PART
             char action[100];
             snprintf(action, sizeof(action), "LOGOUT (%s)", role_to_string(client_role));
 
@@ -91,7 +87,6 @@ void *client_handler(void *arg)
         char response[BUFFER_SIZE];
         int result;
 
-        // 🔥 LOGIN handled FIRST (no auth check)
         if (msg.type == LOGIN)
         {
             client_role = msg.role;
@@ -120,7 +115,6 @@ void *client_handler(void *arg)
             continue;
         }
 
-        // 🔒 Authorization AFTER login
         if (!is_authorized(msg.role, msg.type))
         {
             send_response(client_socket, "ERROR: Unauthorized action\n");
@@ -195,7 +189,6 @@ void *client_handler(void *arg)
             int new_load = msg.value;
             int delta = new_load - allocated;
 
-            // 🔼 Increase load
             if (delta > 0)
             {
                 int x = request_capacity(delta);
@@ -211,7 +204,6 @@ void *client_handler(void *arg)
                     log_grid_action(client_id, "INCREASED", delta, get_total_capacity() - get_used_capacity());
                 }
 
-                // PARTIAL AVAILABLE (IMPORTANT FIX)
                 else if (x >= 0)
                 {
                     snprintf(response, BUFFER_SIZE,
@@ -225,7 +217,6 @@ void *client_handler(void *arg)
                     send_fault_message(fault_msg);
                 }
 
-                // FULL FAILURE
                 else
                 {
                     int available = get_total_capacity() - get_used_capacity();
@@ -236,7 +227,6 @@ void *client_handler(void *arg)
                 }
             }
 
-            // 🔽 Decrease load
             else if (delta < 0)
             {
                 release_capacity(-delta);

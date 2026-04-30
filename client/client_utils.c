@@ -1,5 +1,3 @@
-// client/client_utils.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,13 +6,11 @@
 
 #include "client_utils.h"
 
-// Connect to server
 int connect_to_server(const char *ip, int port)
 {
     int sock;
     struct sockaddr_in server_addr;
 
-    // Create socket
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0)
     {
@@ -22,7 +18,6 @@ int connect_to_server(const char *ip, int port)
         return -1;
     }
 
-    // Setup server address
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
 
@@ -33,7 +28,6 @@ int connect_to_server(const char *ip, int port)
         return -1;
     }
 
-    // Connect to server
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
         perror("Connection failed");
@@ -46,7 +40,6 @@ int connect_to_server(const char *ip, int port)
     return sock;
 }
 
-// Send structured message
 int send_message(int sock, Message *msg)
 {
     int bytes = send(sock, msg, sizeof(Message), 0);
@@ -58,7 +51,6 @@ int send_message(int sock, Message *msg)
     return 0;
 }
 
-// Receive response from server
 int receive_response(int sock, char *buffer, int size)
 {
     int bytes = recv(sock, buffer, size - 1, 0);
@@ -68,6 +60,6 @@ int receive_response(int sock, char *buffer, int size)
         return -1;
     }
 
-    buffer[bytes] = '\0'; // null terminate
+    buffer[bytes] = '\0';
     return bytes;
 }

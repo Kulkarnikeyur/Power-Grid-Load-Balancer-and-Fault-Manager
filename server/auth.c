@@ -1,5 +1,3 @@
-// server/auth.c
-
 #include <stdio.h>
 #include <string.h>
 #include "auth.h"
@@ -21,7 +19,6 @@ int get_role_id(const char *role_str)
 int is_authorized(int role, int action)
 {
 
-    // Admin → full access
     if (role == ROLE_ADMIN)
     {
         if (action == VIEW_STATUS || action == MODIFY_CAPACITY)
@@ -29,7 +26,6 @@ int is_authorized(int role, int action)
         return 0;
     }
 
-    // Operator → limited actions
     if (role == ROLE_OPERATOR)
     {
         if (action == LOAD_UPDATE || action == REQUEST_CAPACITY)
@@ -37,7 +33,6 @@ int is_authorized(int role, int action)
         return 0;
     }
 
-    // Monitor → read-only
     if (role == ROLE_MONITOR)
     {
         if (action == VIEW_STATUS)
@@ -45,5 +40,5 @@ int is_authorized(int role, int action)
         return 0;
     }
 
-    return 0; // default deny
+    return 0;
 }
