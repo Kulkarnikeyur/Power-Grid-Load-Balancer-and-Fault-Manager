@@ -96,7 +96,8 @@ void *client_handler(void *arg)
         {
             client_role = msg.role;
             client_id = msg.client_id;
-            char role_str[16];
+            char action[100];
+            char role_str[20];
             printf("Client %d logged in as ", client_id);
 
             if (client_role == ROLE_ADMIN)
@@ -114,8 +115,8 @@ void *client_handler(void *arg)
                 printf("MONITOR\n");
                 strcpy(role_str, "MONITOR");
             }
-            send_response(client_socket, "LOGIN OK\n");
-            log_grid_action(client_id, role_str, 0, get_total_capacity() - get_used_capacity());
+            snprintf(action, sizeof(action), "LOGIN (%s)", role_str);
+            log_grid_action(client_id, action, 0, get_total_capacity() - get_used_capacity());
             continue;
         }
 
@@ -290,15 +291,6 @@ void *client_handler(void *arg)
         }
 
         send_response(client_socket, response);
-    }
-    if (allocated > 0)
-    {
-        int temp = allocated;
-        release_capacity(allocated);
-        log_grid_action(client_id, "RELEASED", allocated, get_total_capacity() - get_used_capacity());
-        allocated = 0;
-
-        printf("Released %d units from client %d\n", temp, client_id);
     }
     close(client_socket);
     return NULL;
