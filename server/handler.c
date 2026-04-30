@@ -91,27 +91,25 @@ void *client_handler(void *arg)
         {
             client_role = msg.role;
             client_id = msg.client_id;
-            char action[100];
+
             char role_str[20];
-            printf("Client %d logged in as ", client_id);
 
             if (client_role == ROLE_ADMIN)
-            {
-                printf("ADMIN\n");
                 strcpy(role_str, "ADMIN");
-            }
             else if (client_role == ROLE_OPERATOR)
-            {
-                printf("OPERATOR\n");
                 strcpy(role_str, "OPERATOR");
-            }
             else if (client_role == ROLE_MONITOR)
-            {
-                printf("MONITOR\n");
                 strcpy(role_str, "MONITOR");
-            }
+
+            printf("Client %d logged in as %s\n", client_id, role_str);
+
+            char action[100];
             snprintf(action, sizeof(action), "LOGIN (%s)", role_str);
             log_grid_action(client_id, action, 0, get_total_capacity() - get_used_capacity());
+
+            // 🔥 ADD THIS LINE (CRITICAL)
+            send_response(client_socket, "LOGIN OK");
+
             continue;
         }
 
