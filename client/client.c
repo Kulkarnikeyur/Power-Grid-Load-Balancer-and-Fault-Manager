@@ -17,11 +17,12 @@ int main()
     setup_signal_handler();
     int choice;
 
-    printf("Select role:\n");
+    printf("\n===== SELECT ROLE =====\n");
     printf("1. Operator\n");
     printf("2. Monitor\n");
     printf("3. Admin\n");
     printf("Enter choice: ");
+    fflush(stdout);
     scanf("%d", &choice);
 
     // 🔹 Operator

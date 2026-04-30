@@ -14,7 +14,7 @@ void run_monitor()
     int fd;
     char buffer[BUFFER_SIZE];
 
-    printf("Starting monitor...\n");
+    printf("===== MONITOR STARTED =====\n");
 
     // Open FIFO for reading
     fd = open(FIFO_PATH, O_RDONLY);
@@ -24,7 +24,7 @@ void run_monitor()
         return;
     }
 
-    printf("Listening for fault messages...\n");
+    printf("Listening for alerts...\n\n");
 
     while (1)
     {
@@ -40,7 +40,7 @@ void run_monitor()
             if (strlen(buffer) == 0)
                 continue;
 
-            printf("\n[MONITOR] %s\n", buffer);
+            printf("[MONITOR] %s\n", buffer);
             fflush(stdout);
         }
     }

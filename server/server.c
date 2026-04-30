@@ -32,8 +32,6 @@ int main()
 
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 
-    printf("Socket created successfully\n");
-
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
@@ -46,8 +44,6 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    printf("Bind successful\n");
-
     // Listen
     if (listen(server_fd, MAX_CLIENTS) < 0)
     {
@@ -55,8 +51,6 @@ int main()
         close(server_fd);
         exit(EXIT_FAILURE);
     }
-
-    printf("Server listening on port %d...\n", PORT);
 
     int fd = open("grid_log.dat", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
@@ -70,7 +64,8 @@ int main()
     init_fault_system();
     init_grid(DEFAULT_CAPACITY);
 
-    printf("Fresh start: Grid initialized with %d\n", DEFAULT_CAPACITY);
+    printf("===== SERVER STARTED =====\n");
+    printf("Listening on port %d...\n\n", PORT);
 
     while (1)
     {

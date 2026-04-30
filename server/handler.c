@@ -39,7 +39,6 @@ static ssize_t recv_all(int sock, void *buffer, size_t length)
     return total;
 }
 
-// Send response
 static void send_response(int client_socket, const char *response)
 {
     send(client_socket, response, strlen(response), 0);
@@ -101,13 +100,12 @@ void *client_handler(void *arg)
             else if (client_role == ROLE_MONITOR)
                 strcpy(role_str, "MONITOR");
 
-            printf("Client %d logged in as %s\n", client_id, role_str);
+            printf("Client %d logged in as %s\n\n", client_id, role_str);
 
             char action[100];
             snprintf(action, sizeof(action), "LOGIN (%s)", role_str);
             log_grid_action(client_id, action, 0, get_total_capacity() - get_used_capacity());
 
-            // 🔥 ADD THIS LINE (CRITICAL)
             send_response(client_socket, "LOGIN OK");
 
             continue;
@@ -133,7 +131,7 @@ void *client_handler(void *arg)
             if (msg.value <= 0)
             {
                 snprintf(response, BUFFER_SIZE,
-                         "ERROR: Request must be positive\n");
+                         "ERROR: Request must be positive");
             }
             else
             {
@@ -143,13 +141,13 @@ void *client_handler(void *arg)
                 {
                     allocated += msg.value;
                     snprintf(response, BUFFER_SIZE,
-                             "SUCCESS: Allocated %d units\n", msg.value);
+                             "SUCCESS: Allocated %d units", msg.value);
                     log_grid_action(client_id, "ALLOCATED", msg.value, get_total_capacity() - get_used_capacity());
                 }
                 else if (result >= 0)
                 {
                     snprintf(response, BUFFER_SIZE,
-                             "ERROR: Only %d units available\n", result);
+                             "ERROR: Only %d units available", result);
 
                     char fault_msg[256];
 
@@ -161,7 +159,7 @@ void *client_handler(void *arg)
                 else
                 {
                     snprintf(response, BUFFER_SIZE,
-                             "FAIL: Not enough capacity\n");
+                             "FAIL: Not enough capacity");
 
                     send_fault_message("ALERT: Check if grid is initialized and ensure requested capacity is valid");
                 }
@@ -173,14 +171,14 @@ void *client_handler(void *arg)
             if (allocated <= 0)
             {
                 snprintf(response, BUFFER_SIZE,
-                         "ERROR: Allocate capacity first using REQUEST_CAPACITY\n");
+                         "ERROR: Allocate capacity first using REQUEST_CAPACITY");
                 break;
             }
 
             if (msg.value < 0)
             {
                 snprintf(response, BUFFER_SIZE,
-                         "ERROR: Load cannot be negative\n");
+                         "ERROR: Load cannot be negative");
                 break;
             }
 
@@ -191,13 +189,12 @@ void *client_handler(void *arg)
             {
                 int x = request_capacity(delta);
 
-                // SUCCESS
                 if (x == -2)
                 {
                     allocated = new_load;
 
                     snprintf(response, BUFFER_SIZE,
-                             "LOAD UPDATED: %d (increased by %d)\n",
+                             "LOAD UPDATED: %d (increased by %d)",
                              allocated, delta);
                     log_grid_action(client_id, "INCREASED", delta, get_total_capacity() - get_used_capacity());
                 }
@@ -205,7 +202,7 @@ void *client_handler(void *arg)
                 else if (x >= 0)
                 {
                     snprintf(response, BUFFER_SIZE,
-                             "FAIL: Only %d units available, cannot increase to %d\n",
+                             "FAIL: Only %d units available, cannot increase to %d",
                              x, new_load);
 
                     char fault_msg[256];
@@ -220,7 +217,7 @@ void *client_handler(void *arg)
                     int available = get_total_capacity() - get_used_capacity();
 
                     snprintf(response, BUFFER_SIZE,
-                             "FAIL: Not enough capacity (available: %d)\n",
+                             "FAIL: Not enough capacity (available: %d)",
                              available);
                 }
             }
@@ -231,7 +228,7 @@ void *client_handler(void *arg)
                 allocated = new_load;
 
                 snprintf(response, BUFFER_SIZE,
-                         "LOAD UPDATED: %d (decreased by %d)\n",
+                         "LOAD UPDATED: %d (decreased by %d)",
                          allocated, -delta);
                 log_grid_action(client_id, "DECREASED", -delta, get_total_capacity() - get_used_capacity());
             }
@@ -240,7 +237,7 @@ void *client_handler(void *arg)
             else
             {
                 snprintf(response, BUFFER_SIZE,
-                         "LOAD UNCHANGED: %d\n", allocated);
+                         "LOAD UNCHANGED: %d", allocated);
             }
 
             break;
@@ -248,7 +245,7 @@ void *client_handler(void *arg)
 
         case VIEW_STATUS:
             snprintf(response, BUFFER_SIZE,
-                     "STATUS: %d / %d used\n",
+                     "STATUS: %d / %d used",
                      get_used_capacity(), get_total_capacity());
             break;
 
@@ -258,24 +255,24 @@ void *client_handler(void *arg)
             if (result == 0)
             {
                 snprintf(response, BUFFER_SIZE,
-                         "SUCCESS: Capacity updated to %d\n", msg.value);
+                         "SUCCESS: Capacity updated to %d", msg.value);
                 log_grid_action(client_id, "MODIFIED_CAPACITY", msg.value, get_total_capacity() - get_used_capacity());
             }
             else
             {
                 snprintf(response, BUFFER_SIZE,
-                         "FAIL: Invalid capacity update\n");
+                         "FAIL: Invalid capacity update");
             }
             break;
 
         case FORCE_DISCONNECT:
-            send_response(client_socket, "Disconnected by server\n");
+            send_response(client_socket, "Disconnected by server");
             close(client_socket);
             return NULL;
 
         default:
             snprintf(response, BUFFER_SIZE,
-                     "ERROR: Unknown request\n");
+                     "ERROR: Unknown request");
         }
 
         send_response(client_socket, response);

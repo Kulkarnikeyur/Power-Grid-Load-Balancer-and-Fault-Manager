@@ -55,7 +55,7 @@ void send_fault_message(const char *msg)
     write(fd, "\n", 1);
     close(fd);
 
-    printf("Fault message sent: %s\n", msg);
+    printf("[ALERT GENERATED] %s\n\n", msg);
 }
 
 void send_overload_signal(int pid)

@@ -21,11 +21,11 @@ void run_admin(int sock)
 
     send_message(sock, &login_msg);
     receive_response(sock, response, sizeof(response));
-    printf("Server: %s", response);
+    printf("\n[SERVER] %s\n", response);
 
     while (1)
     {
-        printf("\n--- Admin Menu ---\n");
+        printf("\n===== ADMIN MENU =====\n");
         printf("1. View Grid Status\n");
         printf("2. Modify Capacity\n");
         printf("3. Exit\n");
@@ -43,7 +43,7 @@ void run_admin(int sock)
 
             send_message(sock, &msg);
             receive_response(sock, response, sizeof(response));
-            printf("Server: %s\n", response);
+            printf("\n[SERVER] %s\n", response);
             break;
 
         case 2:
@@ -55,7 +55,7 @@ void run_admin(int sock)
 
             send_message(sock, &msg);
             receive_response(sock, response, sizeof(response));
-            printf("Server: %s\n", response);
+            printf("\n[SERVER] %s\n", response);
             break;
 
         case 3:

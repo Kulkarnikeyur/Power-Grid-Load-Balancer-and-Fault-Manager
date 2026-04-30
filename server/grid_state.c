@@ -74,8 +74,7 @@ int request_capacity(int amount)
     {
         send_fault_message("WARNING: Grid capacity reached!");
     }
-    printf("Allocated %d units, Used: %d / %d\n",
-           amount, used_capacity, total_capacity);
+    // printf("Allocated %d units, Used: %d / %d\n", amount, used_capacity, total_capacity);
 
     return -2;
 }
@@ -95,8 +94,7 @@ void release_capacity(int amount)
     for (int i = 0; i < amount; i++)
         sem_post(&capacity_sem);
 
-    printf("Released %d units, Used: %d / %d\n",
-           amount, used_capacity, total_capacity);
+    // printf("Released %d units, Used: %d / %d\n", amount, used_capacity, total_capacity);
 }
 
 int modify_capacity(int new_total_capacity)
@@ -135,8 +133,8 @@ int modify_capacity(int new_total_capacity)
     total_capacity = new_total_capacity;
     pthread_mutex_unlock(&grid_mutex);
 
-    printf("Modified grid capacity to %d, Used: %d\n",
-           total_capacity, used_capacity);
+    // printf("Modified grid capacity to %d, Used: %d\n",
+    //        total_capacity, used_capacity);
     return 0;
 }
 

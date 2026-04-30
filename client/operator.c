@@ -20,19 +20,16 @@ void run_operator(int sock)
 
     send_message(sock, &login_msg);
     receive_response(sock, response, sizeof(response));
-    printf("Server: %s", response);
+    printf("\n[SERVER] %s\n", response);
     fflush(stdout);
 
     while (1)
     {
-        printf("\n--- Operator Menu ---");
-        printf("\n1. Update Load");
-        fflush(stdout);
-        printf("\n2. Request Capacity");
-        fflush(stdout);
-        printf("\n3. Exit");
-        fflush(stdout);
-        printf("\nEnter choice: ");
+        printf("\n===== OPERATOR MENU =====\n");
+        printf("1. Update Load\n");
+        printf("2. Request Capacity\n");
+        printf("3. Exit\n");
+        printf("Enter choice: ");
         fflush(stdout);
         scanf("%d", &choice);
 
@@ -43,39 +40,35 @@ void run_operator(int sock)
             msg.role = ROLE_OPERATOR;
             msg.client_id = client_id;
             msg.type = LOAD_UPDATE;
-            printf("\nEnter current load: ");
+            printf("Enter current load: ");
             fflush(stdout);
             scanf("%d", &msg.value);
 
             send_message(sock, &msg);
             receive_response(sock, response, sizeof(response));
-            printf("\nServer: %s", response);
-            fflush(stdout);
+            printf("\n[SERVER] %s\n", response);
             break;
 
         case 2:
             msg.role = ROLE_OPERATOR;
             msg.client_id = client_id;
             msg.type = REQUEST_CAPACITY;
-            printf("\nEnter required capacity: ");
+            printf("Enter required capacity: ");
             fflush(stdout);
             scanf("%d", &msg.value);
 
             send_message(sock, &msg);
             receive_response(sock, response, sizeof(response));
-            printf("\nServer: %s", response);
-            fflush(stdout);
+            printf("\n[SERVER] %s\n", response);
             break;
 
         case 3:
-            printf("\nExiting operator...\n");
-            fflush(stdout);
+            printf("Exiting operator...\n");
             close(sock);
             return;
 
         default:
-            printf("\nInvalid choice");
-            fflush(stdout);
+            printf("Invalid choice");
         }
     }
 }
