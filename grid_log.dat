@@ -1,0 +1,7 @@
+[21:46:14] Client 8548 ADMIN 0 → Remaining: 100
+[21:46:18] Client 8552 OPERATOR 0 → Remaining: 100
+[21:46:21] Client 8552 ALLOCATED 30 → Remaining: 70
+[21:46:24] Client 8552 INCREASED 10 → Remaining: 60
+[21:46:26] Client 8552 LOGOUT (OPERATOR) 0 → Remaining: 100
+[21:46:42] Client 8548 MODIFIED_CAPACITY 40 → Remaining: 40
+[21:46:44] Client 8548 LOGOUT (ADMIN) 0 → Remaining: 40

@@ -10,9 +10,21 @@
 #include "auth.h"
 #include "grid_state.h"
 #include "fault.h"
+#include "file_ops.h"
 #include "../common/protocol.h"
 
 #define BUFFER_SIZE 1024
+
+const char *role_to_string(int role)
+{
+    if (role == ROLE_ADMIN)
+        return "ADMIN";
+    if (role == ROLE_OPERATOR)
+        return "OPERATOR";
+    if (role == ROLE_MONITOR)
+        return "MONITOR";
+    return "UNKNOWN";
+}
 
 // Safe receive
 static ssize_t recv_all(int sock, void *buffer, size_t length)
@@ -64,6 +76,14 @@ void *client_handler(void *arg)
 
                 printf("Released %d units from client %d\n", temp, client_id);
             }
+
+            // 🔥 ADD THIS PART
+            char action[100];
+            snprintf(action, sizeof(action), "LOGOUT (%s)", role_to_string(client_role));
+
+            log_grid_action(client_id, action, 0,
+                            get_total_capacity() - get_used_capacity());
+
             printf("Client socket %d disconnected\n", client_socket);
             break;
         }
@@ -76,17 +96,26 @@ void *client_handler(void *arg)
         {
             client_role = msg.role;
             client_id = msg.client_id;
-
+            char role_str[16];
             printf("Client %d logged in as ", client_id);
 
             if (client_role == ROLE_ADMIN)
+            {
                 printf("ADMIN\n");
+                strcpy(role_str, "ADMIN");
+            }
             else if (client_role == ROLE_OPERATOR)
+            {
                 printf("OPERATOR\n");
+                strcpy(role_str, "OPERATOR");
+            }
             else if (client_role == ROLE_MONITOR)
+            {
                 printf("MONITOR\n");
-
+                strcpy(role_str, "MONITOR");
+            }
             send_response(client_socket, "LOGIN OK\n");
+            log_grid_action(client_id, role_str, 0, get_total_capacity() - get_used_capacity());
             continue;
         }
 
@@ -94,6 +123,14 @@ void *client_handler(void *arg)
         if (!is_authorized(msg.role, msg.type))
         {
             send_response(client_socket, "ERROR: Unauthorized action\n");
+
+            char fault_msg[256];
+            snprintf(fault_msg, sizeof(fault_msg),
+                     "ALERT: Unauthorized access attempt by client %d",
+                     msg.client_id);
+
+            send_fault_message(fault_msg);
+
             continue;
         }
 
@@ -114,6 +151,7 @@ void *client_handler(void *arg)
                     allocated += msg.value;
                     snprintf(response, BUFFER_SIZE,
                              "SUCCESS: Allocated %d units\n", msg.value);
+                    log_grid_action(client_id, "ALLOCATED", msg.value, get_total_capacity() - get_used_capacity());
                 }
                 else if (result >= 0)
                 {
@@ -160,7 +198,8 @@ void *client_handler(void *arg)
             if (delta > 0)
             {
                 int x = request_capacity(delta);
-                // ONLY rely on semaphore
+
+                // SUCCESS
                 if (x == -2)
                 {
                     allocated = new_load;
@@ -168,8 +207,25 @@ void *client_handler(void *arg)
                     snprintf(response, BUFFER_SIZE,
                              "LOAD UPDATED: %d (increased by %d)\n",
                              allocated, delta);
+                    log_grid_action(client_id, "INCREASED", delta, get_total_capacity() - get_used_capacity());
                 }
-                else if (x == -1)
+
+                // PARTIAL AVAILABLE (IMPORTANT FIX)
+                else if (x >= 0)
+                {
+                    snprintf(response, BUFFER_SIZE,
+                             "FAIL: Only %d units available, cannot increase to %d\n",
+                             x, new_load);
+
+                    char fault_msg[256];
+                    snprintf(fault_msg, sizeof(fault_msg),
+                             "ALERT: Load update denied (available: %d)", x);
+
+                    send_fault_message(fault_msg);
+                }
+
+                // FULL FAILURE
+                else
                 {
                     int available = get_total_capacity() - get_used_capacity();
 
@@ -188,6 +244,7 @@ void *client_handler(void *arg)
                 snprintf(response, BUFFER_SIZE,
                          "LOAD UPDATED: %d (decreased by %d)\n",
                          allocated, -delta);
+                log_grid_action(client_id, "DECREASED", -delta, get_total_capacity() - get_used_capacity());
             }
 
             // ➖ No change
@@ -213,6 +270,7 @@ void *client_handler(void *arg)
             {
                 snprintf(response, BUFFER_SIZE,
                          "SUCCESS: Capacity updated to %d\n", msg.value);
+                log_grid_action(client_id, "MODIFIED_CAPACITY", msg.value, get_total_capacity() - get_used_capacity());
             }
             else
             {
@@ -237,6 +295,7 @@ void *client_handler(void *arg)
     {
         int temp = allocated;
         release_capacity(allocated);
+        log_grid_action(client_id, "RELEASED", allocated, get_total_capacity() - get_used_capacity());
         allocated = 0;
 
         printf("Released %d units from client %d\n", temp, client_id);

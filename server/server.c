@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 #include "handler.h"
 #include "fault.h"
@@ -61,6 +62,16 @@ int main()
 
     printf("Server listening on port %d...\n", PORT);
 
+    // Reset log file on every server start
+    int fd = open("grid_log.dat", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0)
+    {
+        perror("Failed to initialize log file");
+    }
+    else
+    {
+        close(fd);
+    }
     // Init systems
     init_fault_system();
     init_grid(DEFAULT_CAPACITY);

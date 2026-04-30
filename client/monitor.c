@@ -1,9 +1,8 @@
-// client/monitor.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include "monitor.h"
 
@@ -34,7 +33,17 @@ void run_monitor()
         if (bytes > 0)
         {
             buffer[bytes] = '\0';
-            printf("FAULT ALERT: %s", buffer);
+
+            // Remove trailing newline
+            if (buffer[bytes - 1] == '\n')
+                buffer[bytes - 1] = '\0';
+
+            // 🔥 Ignore empty messages
+            if (strlen(buffer) == 0)
+                continue;
+
+            printf("\n[MONITOR] %s\n", buffer);
+            fflush(stdout);
         }
     }
 
